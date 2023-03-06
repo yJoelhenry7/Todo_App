@@ -10,18 +10,30 @@ const path = require("path");
 app.use(bodyParser.json());
 app.set("view engine", "ejs");
 app.use(express.static(path.join(__dirname, "public")));
+var date = new Date();
+var rdate = date.toLocaleDateString("en-CA");
 
 app.get("/", async (request, response) => {
-  const allTodos = await Todo.findAll();
-  if (request.accepts("html")) {
+  Todo.findAll().then((todos) => {
+    var overDue = [];
+    var dueToday = [];
+    var dueLater = [];
+    todos.map(async (todo) => {
+      if (todo.dataValues.dueDate < rdate) {
+        await overDue.push(todo.dataValues);
+      } else if (todo.dataValues.dueDate > rdate) {
+        await dueToday.push(todo.dataValues);
+      } else {
+        await dueLater.push(todo.dataValues);
+      }
+    });
     response.render("index", {
-      allTodos,
+      l: { todos },
+      OD: overDue,
+      DL: dueLater,
+      DT: dueToday,
     });
-  } else {
-    response.json({
-      allTodos,
-    });
-  }
+  });
 });
 
 app.get("/todos", async (request, response) => {
